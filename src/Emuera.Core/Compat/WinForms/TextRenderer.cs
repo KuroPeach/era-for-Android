@@ -52,8 +52,19 @@ namespace System.Windows.Forms
 				return new Size(0, font?.Height ?? 0);
 			// 主フォントに無い文字は代替フォントで描かれるので、幅もそちらに合わせる
 			// (計測と描画がズレると桁揃えとクリック判定が狂う)
+			//
+			// andEmuera: 切り上げではなく**四捨五入**にする。
+			//
+			// Skia の MeasureText は等幅フォントでも厳密な整数を返さず、文字数に応じて
+			// +0.0001〜0.0005px 程度の端数が乗る (例: '-' 156 個 = 2028.00036)。
+			// これを Ceiling すると **整数のはずの幅が 1px 多く出る**。端数の大きさは
+			// 文字列ごとに違うので、行によって +1px だったり +0px だったりし、
+			// 縦に並べると桁が 1〜3px ずつばらけて「全体が扭む」ように見える。
+			// (eratohoYM AE M のメインメニュー 4 列がこれ。10 行すべてで +1px を実測)
+			//
+			// 端数は 0.001px 未満なので、四捨五入すれば必ず正しい整数へ落ちる。
 			float w = GlyphFallback.Measure(font, text);
-			return new Size((int)Math.Ceiling(w), font.Height);
+			return new Size((int)Math.Round(w, MidpointRounding.AwayFromZero), font.Height);
 		}
 
 		public static Size MeasureText(string text, Font font, Size proposedSize)
