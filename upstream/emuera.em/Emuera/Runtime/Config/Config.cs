@@ -225,7 +225,25 @@ internal static class Config
 		DrawingParam_ShapePositionShift = 0;
 		if (TextDrawingMode != TextDrawingMode.WINAPI)
 			DrawingParam_ShapePositionShift = Math.Max(2, FontSize / 6);
-		DrawableWidth = WindowX - DrawingParam_ShapePositionShift;
+		//andEmuera: 折り返しの判定は描画領域の全幅で行う。
+		//
+		//上流は DrawableWidth = WindowX - DrawingParam_ShapePositionShift。
+		//この引き算は GDI+ で図形・画像と文字の位置が数pxずれる分の余白だが、
+		//**文字の描画 (ConsoleStyledString.DrawTo) はこの補正を足さない**ので、
+		//折り返しだけが実際に描ける幅より数px狭い枠で判定されていた。
+		//窓枠があって右に余白が残る PC では表に出ないが、
+		//描画領域＝設定幅ちょうどの移植版では、ぴったり収まる行が
+		//数px足りずに末尾 1 文字だけ次行へ落ちる。
+		//
+		//実例: era萝乐娜 の OP は 1 行 128 個の U+2588 (半角13px @26pt)。
+		//128*13 = 1664 <= WindowX 1666 なのに DrawableWidth は 1662 しかなく、
+		//127 + 1 に割れて 2 行目に █ が 1 個だけ残っていた。
+		//
+		//DrawableWidth の消費者は折り返し (PrintStringBuffer)、
+		//中央/右寄せ (ConsoleDisplayLine)、ステータスバー (EmueraConsole.Print)
+		//だけで、いずれも「キャンバスの実幅」が正しい基準。
+		//図形・画像の位置決めは DrawingParam_ShapePositionShift 側で従来どおり。
+		DrawableWidth = WindowX;
 		#region eee_カレントディレクトリー
 		// ForceSavDir = Program.ExeDir + "sav\\";
 		ForceSavDir = Program.ExeDir + "sav" + Path.DirectorySeparatorChar;

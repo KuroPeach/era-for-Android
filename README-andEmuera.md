@@ -67,6 +67,7 @@ git clone https://gitlab.com/EvilMask/emuera.em.git upstream/emuera.em
 | `00`〜`09`・`10-gamepad-2d-nav` 以降 | Emuera.NET（.netEmuera）との統合。配布元は [EmueraEX](https://github.com/BluishCat/EmueraEX)（`tools/sync-android.ps1` でこちらへ配られる） |
 | `10-android-portability` | Android 移植のための修正 |
 | `11-performance` | 高速化 |
+| `36-drawable-width` | 折り返しの判定幅を描画領域の全幅に（末尾 1 文字だけ次行へ落ちる件） |
 
 統合パッチが先です。順番を入れ替えると当たりません
 （ファイル名順に当てれば正しい順序になります）。
