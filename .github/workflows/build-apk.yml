@@ -55,8 +55,10 @@ jobs:
           SDK_ROOT="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-/usr/local/lib/android/sdk}}"
           echo "使用 Android SDK: $SDK_ROOT"
           echo "使用 JDK: $JAVA_HOME"
+          # 只出 arm64-v8a（手机够用；x64 只为 PC 模拟器，另行单独打）
           dotnet build src/EraFlow.Android/EraFlow.Android.csproj \
             -c Release \
+            -r android-arm64 \
             -p:AndroidSdkDirectory="$SDK_ROOT" \
             -p:JavaSdkDirectory="$JAVA_HOME" \
             -p:AndroidKeyStore=false
@@ -71,6 +73,11 @@ jobs:
           mkdir -p out
           find src/EraFlow.Android/bin -name "*.apk" -type f -exec cp {} out/ \; 2>/dev/null || true
           ls -la out/ || true
+          # 确认真的只含 arm64，避免又打出混架构包还当成功
+          for f in out/*.apk; do
+            [ -f "$f" ] || continue
+            python3 tools/check-apk-abi.py "$f" arm64-v8a
+          done
 
       - name: Upload APK artifact
         if: always()

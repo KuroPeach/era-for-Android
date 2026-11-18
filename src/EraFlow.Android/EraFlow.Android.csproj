@@ -6,7 +6,10 @@
   <RootNamespace>EraFlow</RootNamespace><PublishTrimmed>false</PublishTrimmed><AndroidLinkMode>None</AndroidLinkMode>
   <RunAOTCompilation>false</RunAOTCompilation><AndroidPackageFormats>apk</AndroidPackageFormats><AndroidUseSharedRuntime>false</AndroidUseSharedRuntime>
   <EmbedAssembliesIntoApk>true</EmbedAssembliesIntoApk>
-  <RuntimeIdentifiers Condition="'$(RuntimeIdentifier)' == ''">android-arm64;android-x64</RuntimeIdentifiers>
+  <!-- 手机只需要 arm64-v8a。x64 是给 PC 上的 Android 模拟器用的，
+       而真到 PC 上直接用桌面版 emuera 更合适，不必为它多背一份运行时。
+       需要时用 -p:RuntimeIdentifier=android-x64 单独打。 -->
+  <RuntimeIdentifiers Condition="'$(RuntimeIdentifier)' == ''">android-arm64</RuntimeIdentifiers>
  </PropertyGroup>
  <ItemGroup>
   <ProjectReference Include="../Emuera.WebHost/Emuera.WebHost.csproj"/><ProjectReference Include="../EraFlow.Storage/EraFlow.Storage.csproj"/>
