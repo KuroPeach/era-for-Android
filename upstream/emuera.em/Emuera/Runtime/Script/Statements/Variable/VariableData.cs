@@ -559,6 +559,21 @@ internal sealed partial class VariableData : IDisposable
 			{
 				case (int)(VariableCode.__LOWERCASE__ & VariableCode.GLOBAL):
 					break;
+				// EraFlow: RANDDATA は MT の内部状態 (624語 + idx)。0 で埋めると
+				// SFMT の遷移が xor と shift だけなので全ゼロは吸収状態になり、
+				// 以降 RAND が永久に 0 を返す。しかもこの状態は DUMPRAND 経由で
+				// あらゆるセーブに書き込まれ、新規データまで汚染する。
+				// RANDDATA は __GLOBAL__ を立てていないため IsGlobal が false になり、
+				// ここで GLOBAL と同様に扱われず default でゼロ埋めされていた。
+				// 乱数状態は「初期化すべき値」ではなく「保存すべき状態」なので温存する。
+				case (int)(VariableCode.__LOWERCASE__ & VariableCode.RANDDATA):
+					// ただしプロセス起動直後はまだ一度も DUMPRAND されておらず
+					// 全ゼロのままなので、そのまま残すとやはり吸収状態に入る。
+					// 未初期化 (全ゼロ) のときだけ、今の乱数器の状態で埋めておく。
+					if (GlobalStatic.VEvaluator?.Rand is not { } liveRand)
+						break;
+					liveRand.GetRand(dataIntegerArray[i]);
+					break;
 				case (int)(VariableCode.__LOWERCASE__ & VariableCode.ITEMPRICE):
 					//constant.ItemPrice.CopyTo(dataIntegerArray[i], 0);
 					Buffer.BlockCopy(constant.ItemPrice, 0, dataIntegerArray[i], 0, 8 * dataIntegerArray[i].Length);

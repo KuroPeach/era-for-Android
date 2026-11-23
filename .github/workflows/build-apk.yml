@@ -23,6 +23,18 @@ jobs:
           distribution: 'microsoft'
           java-version: '21'
 
+      # versionCode は単調増加が必須 (同じ値だと上書きインストールできない)。
+      # コミット数を使えば CI のたびに必ず増える。
+      - name: Compute version
+        run: |
+          # versionCode 单调递增，用提交数保证每次构建都不同
+          CODE=$(git rev-list --count HEAD)
+          if [ "$CODE" -lt 4 ]; then CODE=4; fi
+          # 显示版本形如 1.2.<提交数>，一眼能看出新旧
+          echo "AppVersionCode=$CODE" >> "$GITHUB_ENV"
+          echo "AppVersionName=1.2.$CODE" >> "$GITHUB_ENV"
+          echo "versionCode=$CODE displayVersion=1.2.$CODE"
+
       # ubuntu-latest runner 自带 Android SDK，无需 setup-android 动作
       - name: Locate Android SDK
         run: |
@@ -61,7 +73,9 @@ jobs:
             -r android-arm64 \
             -p:AndroidSdkDirectory="$SDK_ROOT" \
             -p:JavaSdkDirectory="$JAVA_HOME" \
-            -p:AndroidKeyStore=false
+            -p:AndroidKeyStore=false \
+            -p:AppVersionCode="$AppVersionCode" \
+            -p:AppVersionName="$AppVersionName"
         env:
           DOTNET_CLI_TELEMETRY_OPTOUT: 1
 

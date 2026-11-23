@@ -1,4 +1,4 @@
-using MinorShift.Emuera.GameData.Variable;
+﻿using MinorShift.Emuera.GameData.Variable;
 using MinorShift.Emuera.GameView;
 using MinorShift.Emuera.Runtime.Config.JSON;
 using MinorShift.Emuera.Runtime.Script.Data;
@@ -45,7 +45,37 @@ internal sealed class VariableEvaluator : IDisposable
 
 	public void InitRanddata()
 	{
+		// EraFlow: RANDDATA が壊れている (全ゼロ) なら読まずに作り直す。
+		// SFMT の遷移は xor と shift だけなので全ゼロは吸収状態になり、
+		// 一度入ると RAND が永久に 0 を返す。しかも INITRAND はロード直後と
+		// ニューゲーム直後の両方で呼ばれるため、壊れた状態がそのまま
+		// 次のセーブへ書き戻されて連鎖する。入口で断つ。
+		if (IsRandDataBroken())
+		{
+			// 新しい種で作り直し、その状態を RANDDATA にも書き戻す。
+			// 書き戻さないと配列は全ゼロのまま残り、次の DUMPRAND で
+			// また壊れた状態がセーブに焼き付いてしまう。
+			rand = new MTRandom(Environment.TickCount);
+			rand.GetRand(RANDDATA);
+			return;
+		}
 		rand.SetRand(RANDDATA);
+	}
+
+	/// <summary>
+	/// RANDDATA が壊れている (先頭 624 語が全て 0) かどうか。
+	/// idx は問わない: 中身が全ゼロなら、どの idx から読んでも吸収状態に入る。
+	/// </summary>
+	private bool IsRandDataBroken()
+	{
+		long[] rd = RANDDATA;
+		if (rd == null || rd.Length < 2)
+			return true;
+		int words = rd.Length - 1;
+		for (int i = 0; i < words; i++)
+			if (rd[i] != 0)
+				return false;
+		return true;
 	}
 
 	public void DumpRanddata()
@@ -2485,7 +2515,26 @@ internal sealed class VariableEvaluator : IDisposable
 			LoadFromStream(reader);
 		}
 		varData.LastLoadNo = dataIndex;
+		// EraFlow: ロードした RANDDATA が全ゼロなら壊れた状態なので作り直す。
+		// SFMT の遷移は xor と shift だけで全ゼロは吸収状態になり、以後 RAND が
+		// 永久に 0 を返す (RAND:総イベント数 が常に 0 になり、イベントが固定される)。
+		// この壊れた状態は保存されると次のセーブへも伝染するので、
+		// 読み込み時点で健全な状態へ置き換えて連鎖を断つ。
+		RepairRandDataIfBroken();
 		return true;
+	}
+
+	/// <summary>
+	/// RANDDATA が壊れている (全ゼロ) 場合に、現在の乱数器で埋め直す。
+	/// 正常な状態には一切触らない。
+	/// </summary>
+	private void RepairRandDataIfBroken()
+	{
+		// セーブから読んだ直後は INITRAND より先にこちらが走る。
+		// ここで直しておくと、INITRAND を呼ばないゲームでも連鎖が止まる。
+		if (!IsRandDataBroken())
+			return;
+		rand.GetRand(RANDDATA);
 	}
 
 	public static void DelData(int dataIndex)
