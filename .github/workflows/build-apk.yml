@@ -11,6 +11,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # 提交数要完整历史，浅克隆只会数到 1
 
       - name: Setup .NET 10
         uses: actions/setup-dotnet@v4
@@ -27,13 +29,14 @@ jobs:
       # コミット数を使えば CI のたびに必ず増える。
       - name: Compute version
         run: |
-          # versionCode 单调递增，用提交数保证每次构建都不同
-          CODE=$(git rev-list --count HEAD)
-          if [ "$CODE" -lt 4 ]; then CODE=4; fi
-          # 显示版本形如 1.2.<提交数>，一眼能看出新旧
+          # versionCode 必须单调递增，否则新 APK 装不上旧版。
+          # run_number 每次构建 +1，天然单调，也不依赖 git 历史深度。
+          CODE=${{ github.run_number }}
+          if [ "$CODE" -lt 5 ]; then CODE=5; fi
+          COMMITS=$(git rev-list --count HEAD 2>/dev/null || echo 0)
           echo "AppVersionCode=$CODE" >> "$GITHUB_ENV"
           echo "AppVersionName=1.2.$CODE" >> "$GITHUB_ENV"
-          echo "versionCode=$CODE displayVersion=1.2.$CODE"
+          echo "versionCode=$CODE displayVersion=1.2.$CODE commits=$COMMITS"
 
       # ubuntu-latest runner 自带 Android SDK，无需 setup-android 动作
       - name: Locate Android SDK
