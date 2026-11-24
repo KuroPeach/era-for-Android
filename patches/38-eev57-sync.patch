@@ -1,0 +1,56 @@
+diff --git a/upstream/emuera.em/Emuera/Emuera.csproj b/upstream/emuera.em/Emuera/Emuera.csproj
+index bb1fbe1..71454af 100644
+--- a/upstream/emuera.em/Emuera/Emuera.csproj
++++ b/upstream/emuera.em/Emuera/Emuera.csproj
+@@ -22,7 +22,7 @@
+         <ApplicationManifest>emuera.manifest</ApplicationManifest>
+         <Version>1.824.0</Version>
+         <!-- 統合: ベース(EM+EE)の版に、統合レイヤの版 EXvN を足す。パッチを増やしたら上げる -->
+-        <InformationalVersion>1.824+v24+EMv18+EEv56+EXv13</InformationalVersion>
++        <InformationalVersion>1.824+v24+EMv18+EEv57+EXv13</InformationalVersion>
+         <Copyright>Copyright (C) 2008- MinorShift, 妊）|дﾟ)の中の人</Copyright>
+     </PropertyGroup>
+ 
+diff --git a/upstream/emuera.em/Emuera/Runtime/Script/Data/ConstantData.cs b/upstream/emuera.em/Emuera/Runtime/Script/Data/ConstantData.cs
+index 678408e..d90467d 100644
+--- a/upstream/emuera.em/Emuera/Runtime/Script/Data/ConstantData.cs
++++ b/upstream/emuera.em/Emuera/Runtime/Script/Data/ConstantData.cs
+@@ -1191,12 +1191,12 @@ internal sealed class ConstantData
+ 		if (index < 0)
+ 			return ret;
+ 		if (ret == null)
+-			throw new CodeEE(string.Format(trerror.CanNotSpecifiedByString.Text, code.ToString()));
+-		if (index != allowIndex)
++			throw new CodeEE(string.Format(trerror.CanNotSpecifiedByString.Text, varname));
++		if (index > allowIndex)
+ 		{
+ 			if (allowIndex < 0)//GETNUM専用
+-				throw new CodeEE(string.Format(trerror.CanNotSpecifiedByString.Text, code.ToString()));
+-			throw new CodeEE(string.Format(trerror.CannotIndexSpecifiedByString.Text, code.ToString(), (index + 1).ToString()));
++				throw new CodeEE(string.Format(trerror.CanNotSpecifiedByString.Text, varname));
++			throw new CodeEE(string.Format(trerror.CannotIndexSpecifiedByString.Text, varname, (index + 1).ToString()));
+ 		}
+ 		return ret;
+ 	}
+diff --git a/upstream/emuera.em/Emuera/Runtime/Script/Statements/Expression/OperatorMethod.cs b/upstream/emuera.em/Emuera/Runtime/Script/Statements/Expression/OperatorMethod.cs
+index 45806e4..e6375e1 100644
+--- a/upstream/emuera.em/Emuera/Runtime/Script/Statements/Expression/OperatorMethod.cs
++++ b/upstream/emuera.em/Emuera/Runtime/Script/Statements/Expression/OperatorMethod.cs
+@@ -475,7 +475,7 @@ internal static class OperatorMethodManager
+ 		public override long GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
+ 		{
+ 			int c = string.Compare(arguments[0].GetStrValue(exm), arguments[1].GetStrValue(exm), Config.Config.SCExpression);
+-			if (c < 0)
++			if (c >= 0)
+ 				return 1L;
+ 			return 0L;
+ 		}
+@@ -506,7 +506,7 @@ internal static class OperatorMethodManager
+ 		public override long GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
+ 		{
+ 			int c = string.Compare(arguments[0].GetStrValue(exm), arguments[1].GetStrValue(exm), Config.Config.SCExpression);
+-			if (c < 0)
++			if (c <= 0)
+ 				return 1L;
+ 			return 0L;
+ 		}
